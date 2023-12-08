@@ -16,6 +16,7 @@ const App = () => {
 
       socket.emit("ADD_CARD", {
         title: "",
+        bio:"",
         user_id: localStorage.getItem("user"),
         category_id: "6569cc3d580f55d42b911956",
       });

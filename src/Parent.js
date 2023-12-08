@@ -4,7 +4,11 @@ import axios from "./axios/axios"
 import { useSocketContext } from "./socket/Socket"
 
 const Parent = () => {
-    const [profileTitle, setProfileTitle] = useState('');
+    const [profile, setProfile] = useState({
+        title: '',
+        bio: ''
+    });
+
     const [subCardDetails, setSubCardDetails] = useState({
         title: '',
         option: 'text',
@@ -17,10 +21,10 @@ const Parent = () => {
 
     const socket = useSocketContext();
 
-   
+
 
     //listen Sub Card event
-   
+
     const subCardId = localStorage.getItem("subcardId")
 
 
@@ -35,20 +39,23 @@ const Parent = () => {
             if (!cardId) return;
             const { data } = await axios.get(`user/get-card/${cardId}`);
             if (data) {
-                setProfileTitle(data?.data?.card.title);
+                setProfile({
+                    title: data?.data?.card.title || '',
+                    bio: data?.data?.card.bio || '',
+                });
             }
         } catch (error) {
             console.log(error);
         }
     };
 
-//list first subCard detail
+    //list first subCard detail
     const listSubCardDetails = async () => {
         try {
             if (!cardId) return;
             const { data } = await axios.get(`user/get-sub-card/${cardId}`)
             if (data) {
-                console.log(data.data,"subcard details");
+                console.log(data.data, "subcard details");
                 if (data && data.data.length > 0) {
                     const remainingSections = data.data.slice(1);
                     const updatedSubCard = {
@@ -56,7 +63,7 @@ const Parent = () => {
                         description: data.data[0].description,
                         option: data.data[0].option,
                     }
-                    console.log(updatedSubCard,"subcard first data")
+                    console.log(updatedSubCard, "subcard first data")
                     setSubCardDetails(updatedSubCard);
                     setSections(remainingSections.map(section => ({
                         key: section._id,
@@ -68,12 +75,12 @@ const Parent = () => {
                     // console.log(subCardDetails,"subcard details")
                     // console.log(remainingSections,"remaining sections")
                 }
-               
+
             }
-            } catch (error) {
-                console.log(error)
-            }
+        } catch (error) {
+            console.log(error)
         }
+    }
 
     const addSection = () => {
 
@@ -88,7 +95,7 @@ const Parent = () => {
         socket.once("ADD_SUB_CARD", (data) => {
             // localStorage.setItem("sectionId", data._id);
 
-             // Create a new section object with a unique key
+            // Create a new section object with a unique key
             const newSection = {
                 key: data._id,
                 title: '',
@@ -96,68 +103,73 @@ const Parent = () => {
                 description: '',
             };
 
-             // Update the state with the new section
+            // Update the state with the new section
             setSections([...sections, newSection]);
         });
     };
 
     //handle profileTitle
-    const handleProfileTitleChange = (e) => {
-            const newProfileTitle = e.target.value;
-            setProfileTitle(newProfileTitle);
-                socket.emit("UPDATE_CARD", { title: newProfileTitle, _id: cardId });
-        };
+    const handleProfile = (field,value) => {
+        setProfile((preProfile)=>{
+            const updatedProfile ={...preProfile,[field]:value}
+            if(cardId) socket.emit("UPDATE_CARD",{_id:cardId,...updatedProfile}) 
+            return updatedProfile;
+        })
+    };
 
-        //handle static section
-        const handleSubCardChange = (field, value) => {
-            setSubCardDetails((prevDetails) => {
-                const updatedDetails = { ...prevDetails, [field]: value };
+    console.log(profile,"profile")
 
-                // Emit the "UPDATE_SUB_CARD" event to update values in the subcard
-                if (subCardId) {
-                    // console.log(subCardId,...updatedDetails)
-                    socket.emit("UPDATE_SUB_CARD", { _id: subCardId, ...updatedDetails });
-                }
-                return updatedDetails;
-            });
-        };
+    //handle static section
+    const handleSubCardChange = (field, value) => {
+        setSubCardDetails((prevDetails) => {
+            const updatedDetails = { ...prevDetails, [field]: value };
 
-
-        //handleSectionChange
-        const handleSectionChange = (index, field, value) => {
-            const updatedSections = [...sections];
-            updatedSections[index][field] = value;
-            setSections(updatedSections);
-            // console.log(updatedSections,"updatedSections");
-            socket.emit("UPDATE_SECTION_CARD",updatedSections)
-        };
+            // Emit the "UPDATE_SUB_CARD" event to update values in the subcard
+            if (subCardId) {
+                // console.log(subCardId,...updatedDetails)
+                socket.emit("UPDATE_SUB_CARD", { _id: subCardId, ...updatedDetails });
+            }
+            return updatedDetails;
+        });
+    };
 
 
+    //handleSectionChange
+    const handleSectionChange = (index, field, value) => {
+        const updatedSections = [...sections];
+        updatedSections[index][field] = value;
+        setSections(updatedSections);
+        // console.log(updatedSections,"updatedSections");
+        socket.emit("UPDATE_SECTION_CARD", updatedSections)
+    };
 
 
-        return (
+
+
+    return (
+        <div>
+            <button onClick={addSection}>
+                Add section
+            </button>
+
+            {/* Static Section */}
             <div>
-                <button onClick={addSection}>
-                    Add section
-                </button>
+                <input type='text' placeholder='profile title' value={profile.title} onChange={(e) => handleProfile('title', e.target.value)}/>
+                <input type='text' placeholder='profile Bio' value={profile.bio} onChange={(e) => handleProfile('bio', e.target.value)} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", width: "20%", margin: "10px" }}>
+                <input type="text" placeholder='title' onChange={(e) => handleSubCardChange('title', e.target.value)} value={subCardDetails.title} />
+                <select onChange={(e) => handleSubCardChange('option', e.target.value)} value={subCardDetails.option}>
+                    <option value="text">text</option>
+                    <option value="description">Description</option>
+                </select>
+                <textarea type="text" placeholder='description' onChange={(e) => handleSubCardChange('description', e.target.value)} value={subCardDetails.description} />
+            </div>
 
-                                        {/* Static Section */}
-                <div>
-                    <input type='text' placeholder='profile title' value={profileTitle} onChange={handleProfileTitleChange} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", width: "20%", margin: "10px" }}>
-                    <input type="text" placeholder='title' onChange={(e) => handleSubCardChange('title', e.target.value)} value={subCardDetails.title} />
-                    <select onChange={(e) => handleSubCardChange('option', e.target.value)} value={subCardDetails.option}>
-                        <option value="text">text</option>
-                        <option value="description">Description</option>
-                    </select>
-                    <textarea type="text" placeholder='description' onChange={(e) => handleSubCardChange('description', e.target.value)} value={subCardDetails.description} />
-                </div>
+            {/* section */}
+            <div>
 
-                                             {/* section */}
-                <div>
-                    
-                    {sections&&sections.map((section, index) => (
+                {sections && sections.map((section, index) => (
                     <div key={section.key} style={{ display: 'flex', flexDirection: 'column', width: '20%', margin: '10px' }}>
                         <input
                             type="text"
@@ -181,10 +193,10 @@ const Parent = () => {
                     </div>
                 ))}
 
-                    <Child1 profileTitle={profileTitle} subCardDetails={subCardDetails} sections={sections} />
-                </div>
+                <Child1 profile={profile} subCardDetails={subCardDetails} sections={sections} />
             </div>
-        )
-    }
+        </div>
+    )
+}
 
-    export default Parent
+export default Parent

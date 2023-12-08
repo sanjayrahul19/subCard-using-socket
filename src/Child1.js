@@ -1,10 +1,11 @@
 import React from 'react'
 
-const Child1 = ({ profileTitle, subCardDetails,sections  }) => {
+const Child1 = ({ profile, subCardDetails,sections  }) => {
     // console.log(sectionData, "sectionData")
     return (
         <div>
-            <p>profileTitle: {profileTitle}</p>
+            <p>profile Title: {profile.title}</p>
+            <p>profile Bio: {profile.bio}</p>
             <h1>Static Data</h1>
             <p>Title: {subCardDetails.title}</p>
             <p>selectedOption: {subCardDetails.option}</p>
